@@ -1,17 +1,13 @@
-import cors from "cors";
 import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-require("dotenv").config();
-
-const express = require("express");
-const cors = require("cors");
-
-
 
 // =========================
 // CONFIG
@@ -31,9 +27,7 @@ const conversations = {};
 // =========================
 
 app.get("/", (req, res) => {
-
     res.send("🚀 Nova AI Backend Running");
-
 });
 
 // =========================
@@ -41,148 +35,57 @@ app.get("/", (req, res) => {
 // =========================
 
 app.post("/chat", async (req, res) => {
-
     try {
-
         const { message, sessionId } = req.body;
 
         if (!message) {
-
-            return res.status(400).json({
-                error: "Message is required"
-            });
-
+            return res.status(400).json({ error: "Message is required" });
         }
 
-        const currentSession =
-            sessionId || "default";
-
-        // Create session
+        const currentSession = sessionId || "default";
 
         if (!conversations[currentSession]) {
-
             conversations[currentSession] = [];
-
         }
-
-        // Save user message
 
         conversations[currentSession].push({
             role: "user",
-            parts: [
-                {
-                    text: message
-                }
-            ]
+            parts: [{ text: message }]
         });
 
-        // Limit memory size
-
-        if (
-            conversations[currentSession].length > 30
-        ) {
-
+        if (conversations[currentSession].length > 30) {
             conversations[currentSession] =
-            conversations[currentSession]
-            .slice(-30);
-
+                conversations[currentSession].slice(-30);
         }
 
-        async function callGemini(url, options, retries = 3) {
-
-    for (let i = 0; i < retries; i++) {
-
-        const response = await fetch(url, options);
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    contents: conversations[currentSession]
+                })
+            }
+        );
 
         const data = await response.json();
 
-        if (!data.error) {
-            return data;
-        }
-
-        if (
-            data.error.code === 503 &&
-            i < retries - 1
-        ) {
-
-            console.log(
-                `Retry ${i + 1}...`
-            );
-
-            await new Promise(resolve =>
-                setTimeout(resolve, 3000)
-            );
-
-            continue;
-        }
-
-        throw new Error(
-            data.error.message
-        );
-    }
-}
-const data = await callGemini(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${API_KEY}`,
-    {
-        method: "POST",
-        headers: {
-            "Content-Type":
-            "application/json"
-        },
-        body: JSON.stringify({
-            systemInstruction: {
-                parts: [{
-                    text:
-                    "You are Nova AI."
-                }]
-            },
-            contents:
-            conversations[currentSession]
-        })
-    }
-);
-
-        
-        // Save AI Response
-
-        if (
-            data.candidates &&
-            data.candidates[0] &&
-            data.candidates[0].content
-        ) {
-
+        if (data.candidates?.[0]?.content) {
             conversations[currentSession].push({
-
                 role: "model",
-
-                parts:
-                data.candidates[0]
-                .content.parts
-
+                parts: data.candidates[0].content.parts
             });
-
         }
 
         res.json(data);
 
+    } catch (error) {
+        console.error("Server Error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
     }
-
-    catch (error) {
-
-        console.error(
-            "Server Error:",
-            error
-        );
-
-        res.status(500).json({
-
-            error:
-            "Internal Server Error"
-
-        });
-
-    }
-
 });
 
 // =========================
@@ -190,78 +93,22 @@ const data = await callGemini(
 // =========================
 
 app.post("/new-chat", (req, res) => {
+    const { sessionId } = req.body;
 
-    try {
-
-        const { sessionId } = req.body;
-
-        if (sessionId) {
-
-            conversations[sessionId] = [];
-
-        }
-
-        res.json({
-
-            success: true,
-            message:
-            "New chat created"
-
-        });
-
+    if (sessionId) {
+        conversations[sessionId] = [];
     }
 
-    catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-
-            error:
-            "Failed to create chat"
-
-        });
-
-    }
-
+    res.json({ success: true });
 });
 
 // =========================
-// CLEAR ALL MEMORY
+// CLEAR MEMORY
 // =========================
 
 app.post("/clear-memory", (req, res) => {
-
-    try {
-
-        Object.keys(conversations)
-        .forEach(key => {
-
-            delete conversations[key];
-
-        });
-
-        res.json({
-
-            success: true,
-            message:
-            "All memory cleared"
-
-        });
-
-    }
-
-    catch (error) {
-
-        res.status(500).json({
-
-            error:
-            "Failed to clear memory"
-
-        });
-
-    }
-
+    Object.keys(conversations).forEach(key => delete conversations[key]);
+    res.json({ success: true });
 });
 
 // =========================
@@ -269,13 +116,5 @@ app.post("/clear-memory", (req, res) => {
 // =========================
 
 app.listen(PORT, () => {
-
-    console.log(
-        `🚀 Nova AI Server Running`
-    );
-
-    console.log(
-        `🌐 http://localhost:${PORT}`
-    );
-
+    console.log("🚀 Server Running on port " + PORT);
 });
