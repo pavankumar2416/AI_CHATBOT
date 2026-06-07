@@ -1,6 +1,6 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
@@ -15,6 +15,8 @@ app.use(express.json());
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const PORT = process.env.PORT || 3000;
+
+// rest of your code stays SAME
 
 // =========================
 // MEMORY STORAGE
