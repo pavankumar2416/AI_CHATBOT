@@ -22,7 +22,7 @@ const chatHistory = document.getElementById("chatHistory");
 // SETTINGS
 // =========================
 
-const API_URL = "http://localhost:3000/chat";
+const API_URL = "https://ai-chatbot-backend-d5bo.onrender.com";
 
 // =========================
 // SESSION MEMORY
@@ -371,7 +371,7 @@ newChatBtn.addEventListener(
         try{
 
             await fetch(
-                "http://localhost:3000/new-chat",
+                "https://ai-chatbot-backend-d5bo.onrender.com",
                 {
                     method:"POST",
                     headers:{
