@@ -1,8 +1,7 @@
 // =========================
 // ELEMENTS
 // =========================
-import cors from "cors";
-app.use(cors());
+
 const chatBox = document.getElementById("chat-box");
 const userInput = document.getElementById("userInput");
 
