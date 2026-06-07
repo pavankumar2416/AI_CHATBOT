@@ -9,76 +9,48 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// =========================
-// CONFIG
-// =========================
-
 const API_KEY = process.env.GEMINI_API_KEY;
 const PORT = process.env.PORT || 3000;
-
-// rest of your code stays SAME
-
-// =========================
-// MEMORY STORAGE
-// =========================
-
-const conversations = {};
-
-// =========================
-// HEALTH CHECK
-// =========================
 
 app.get("/", (req, res) => {
     res.send("🚀 Nova AI Backend Running");
 });
 
-// =========================
-// CHAT API
-// =========================
-
 app.post("/chat", async (req, res) => {
     try {
-        const { message, sessionId } = req.body;
+        const { message } = req.body;
 
-        if (!message) {
-            return res.status(400).json({ error: "Message is required" });
-        }
-
-        const currentSession = sessionId || "default";
-
-        if (!conversations[currentSession]) {
-            conversations[currentSession] = [];
-        }
-
-        conversations[currentSession].push({
-            role: "user",
-            parts: [{ text: message }]
-        });
-
-        if (conversations[currentSession].length > 30) {
-            conversations[currentSession] =
-                conversations[currentSession].slice(-30);
-        }
-
-       app.post("/chat", async (req, res) => {
-  try {
-    const { message } = req.body;
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
             {
-              role: "user",
-              parts: [{ text: message }]
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [{ text: message }]
+                        }
+                    ]
+                })
             }
-          ]
-        })
-      }
-    );
+        );
+
+        const data = await response.json();
+
+        res.json(data);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Backend failed" });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log("🚀 Server running on port " + PORT);
+});
 
     const data = await response.json();
 
