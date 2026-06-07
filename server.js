@@ -9,17 +9,60 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// =========================
+// CONFIG
+// =========================
+
 const API_KEY = process.env.GEMINI_API_KEY;
 const PORT = process.env.PORT || 3000;
+
+// =========================
+// MEMORY STORAGE
+// =========================
+
+const conversations = {};
+
+// =========================
+// HEALTH CHECK
+// =========================
 
 app.get("/", (req, res) => {
     res.send("🚀 Nova AI Backend Running");
 });
 
+// =========================
+// CHAT API
+// =========================
+
 app.post("/chat", async (req, res) => {
     try {
-        const { message } = req.body;
+        const { message, sessionId } = req.body;
 
+        if (!message) {
+            return res.status(400).json({
+                error: "Message is required"
+            });
+        }
+
+        const currentSession = sessionId || "default";
+
+        if (!conversations[currentSession]) {
+            conversations[currentSession] = [];
+        }
+
+        // Save user message
+        conversations[currentSession].push({
+            role: "user",
+            parts: [{ text: message }]
+        });
+
+        // Limit memory
+        if (conversations[currentSession].length > 20) {
+            conversations[currentSession] =
+                conversations[currentSession].slice(-20);
+        }
+
+        // Call Gemini API
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
             {
@@ -28,59 +71,32 @@ app.post("/chat", async (req, res) => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    contents: [
-                        {
-                            role: "user",
-                            parts: [{ text: message }]
-                        }
-                    ]
+                    contents: conversations[currentSession]
                 })
             }
         );
 
         const data = await response.json();
 
+        console.log("Gemini response:", data);
+
+        // Save AI response
+        if (data.candidates?.[0]?.content?.parts) {
+            conversations[currentSession].push({
+                role: "model",
+                parts: data.candidates[0].content.parts
+            });
+        }
+
         res.json(data);
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Backend failed" });
+        console.error("Backend Error:", err);
+        res.status(500).json({
+            error: "Backend failed"
+        });
     }
 });
-
-app.listen(PORT, () => {
-    console.log("🚀 Server running on port " + PORT);
-});
-
-    const data = await response.json();
-
-    res.json(data);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Backend failed" });
-  }
-});
-
-        const data = await response.json();
-
-console.log("API RESPONSE:", data);
-
-removeTyping();
-
-let botReply = "⚠️ No response from AI";
-
-if (data.error) {
-    botReply = "❌ Backend Error: " + (data.error.message || "Unknown error");
-
-} else if (data.candidates?.length > 0) {
-
-    const parts = data.candidates[0]?.content?.parts;
-
-    if (parts?.length > 0) {
-        botReply = parts.map(p => p.text || "").join("");
-    }
-}
 
 // =========================
 // NEW CHAT
@@ -89,7 +105,7 @@ if (data.error) {
 app.post("/new-chat", (req, res) => {
     const { sessionId } = req.body;
 
-    if (sessionId) {
+    if (sessionId && conversations[sessionId]) {
         conversations[sessionId] = [];
     }
 
@@ -101,7 +117,10 @@ app.post("/new-chat", (req, res) => {
 // =========================
 
 app.post("/clear-memory", (req, res) => {
-    Object.keys(conversations).forEach(key => delete conversations[key]);
+    Object.keys(conversations).forEach(key => {
+        delete conversations[key];
+    });
+
     res.json({ success: true });
 });
 
@@ -110,5 +129,5 @@ app.post("/clear-memory", (req, res) => {
 // =========================
 
 app.listen(PORT, () => {
-    console.log("🚀 Server Running on port " + PORT);
+    console.log("🚀 Server running on port " + PORT);
 });
