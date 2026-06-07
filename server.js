@@ -75,20 +75,23 @@ app.post("/chat", async (req, res) => {
 
         const data = await response.json();
 
-        if (data.candidates?.[0]?.content) {
-            conversations[currentSession].push({
-                role: "model",
-                parts: data.candidates[0].content.parts
-            });
-        }
+console.log("API RESPONSE:", data);
 
-        res.json(data);
+removeTyping();
 
-    } catch (error) {
-        console.error("Server Error:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+let botReply = "⚠️ No response from AI";
+
+if (data.error) {
+    botReply = "❌ Backend Error: " + (data.error.message || "Unknown error");
+
+} else if (data.candidates?.length > 0) {
+
+    const parts = data.candidates[0]?.content?.parts;
+
+    if (parts?.length > 0) {
+        botReply = parts.map(p => p.text || "").join("");
     }
-});
+}
 
 // =========================
 // NEW CHAT
