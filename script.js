@@ -1,7 +1,8 @@
 // =========================
 // ELEMENTS
 // =========================
-
+import cors from "cors";
+app.use(cors());
 const chatBox = document.getElementById("chat-box");
 const userInput = document.getElementById("userInput");
 
@@ -22,7 +23,7 @@ const chatHistory = document.getElementById("chatHistory");
 // SETTINGS
 // =========================
 
-const API_URL = "https://ai-chatbot-backend-d5bo.onrender.com";
+const API_URL = "https://ai-chatbot-backend-d5bo.onrender.com/chat";
 
 // =========================
 // SESSION MEMORY
