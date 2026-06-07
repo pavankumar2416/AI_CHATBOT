@@ -60,18 +60,35 @@ app.post("/chat", async (req, res) => {
                 conversations[currentSession].slice(-30);
         }
 
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${API_KEY}`,
+       app.post("/chat", async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
             {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    contents: conversations[currentSession]
-                })
+              role: "user",
+              parts: [{ text: message }]
             }
-        );
+          ]
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Backend failed" });
+  }
+});
 
         const data = await response.json();
 
